@@ -17,6 +17,8 @@ spec:
         app: backend
 
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: worker-node-1
       containers:
         - name: backend
           image: 12970297/java-banking-backend:1.0
