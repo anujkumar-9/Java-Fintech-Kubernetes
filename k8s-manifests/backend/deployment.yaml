@@ -19,9 +19,12 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: worker-node-1
+
       containers:
         - name: backend
-          image: anujkumar03/java-fintech-backend:latest 
+          image: anujkumar03/java-fintech-backend:latest
+          imagePullPolicy: Always
+
           ports:
             - containerPort: 8080
 
@@ -49,6 +52,14 @@ spec:
 
             - name: CORS_ALLOWED_ORIGIN
               value: "*"
+
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "356Mi"
+              cpu: "450m"
 
           readinessProbe:
             httpGet:

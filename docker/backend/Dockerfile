@@ -1,28 +1,27 @@
-# ---------- Stage 1: build the jar with Maven ----------
-FROM maven:3.9-eclipse-temurin-17 AS build
+# ---------- Stage 1: build the static Vite bundle ----------
+FROM node:20-alpine AS build
 WORKDIR /app
 
-COPY pom.xml .
-RUN --mount=type=cache,target=/root/.m2 \
-    mvn -q dependency:go-offline
+COPY frontend/package*.json ./
+RUN npm ci
 
-COPY src ./src
-RUN --mount=type=cache,target=/root/.m2 \
-    mvn -q clean package -DskipTests
+COPY frontend/ .
 
-# ---------- Stage 2: minimal runtime image ----------
-FROM eclipse-temurin:17-jre-jammy
-WORKDIR /app
+# API URL for production build
+ARG VITE_API_URL=http://32.199.146.163:30080/api
+ENV VITE_API_URL=$VITE_API_URL
 
-RUN groupadd -r ledgerline && useradd -r -g ledgerline ledgerline
+RUN npm run build
 
-COPY --from=build /app/target/banking-*.jar app.jar
-RUN chown ledgerline:ledgerline app.jar
-USER ledgerline
+# ---------- Stage 2: serve the built files with Nginx ----------
+FROM nginx:1.27-alpine
 
-EXPOSE 8080
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
-HEALTHCHECK --interval=15s --timeout=5s --start-period=40s --retries=5 \
-  CMD wget -qO- http://localhost:8080/actuator/health | grep -q '"status":"UP"' || exit 1
+EXPOSE 80
 
-ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
+HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:80/ >/dev/null || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]
