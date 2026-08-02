@@ -61,6 +61,14 @@ spec:
               memory: "356Mi"
               cpu: "450m"
 
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+
           readinessProbe:
             httpGet:
               path: /actuator/health

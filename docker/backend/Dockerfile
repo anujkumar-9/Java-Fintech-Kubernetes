@@ -1,27 +1,20 @@
-# ---------- Stage 1: build the static Vite bundle ----------
-FROM node:20-alpine AS build
+# ---------- Stage 1: Build Spring Boot application ----------
+FROM maven:3.9.9-eclipse-temurin-21 AS build
+
 WORKDIR /app
 
-COPY frontend/package*.json ./
-RUN npm ci
+COPY backend/pom.xml .
+COPY backend/src ./src
 
-COPY frontend/ .
+RUN mvn clean package -DskipTests
 
-# API URL for production build
-ARG VITE_API_URL=http://32.199.146.163:30080/api 
-ENV VITE_API_URL=$VITE_API_URL
+# ---------- Stage 2: Run the application ----------
+FROM eclipse-temurin:21-jre
 
-RUN npm run build
+WORKDIR /app
 
-# ---------- Stage 2: serve the built files with Nginx ----------
-FROM nginx:1.27-alpine
+COPY --from=build /app/target/*.jar app.jar
 
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 8080
 
-EXPOSE 80
-
-HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:80/ >/dev/null || exit 1
-
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["java","-jar","app.jar"]
