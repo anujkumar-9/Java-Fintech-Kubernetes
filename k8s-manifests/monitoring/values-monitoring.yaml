@@ -44,9 +44,30 @@ alertmanager:
             - ReadWriteOnce
           resources:
             requests:
-              storage: 2Gi
+              storage: 20Gi
 
-additionalPrometheusRulesMap:
+ service:
+    type: NodePort
+    nodePort: 30093
+  config:
+    global:
+      resolve_timeout: 5m    
+    route:
+      receiver: 'discord-notifications'     
+      group_by: ['alertname']  
+      group_wait: 30s
+      group_interval: 4h
+      routes:
+        - receiver: 'null'
+          matchers:
+            - alertname =~ "Watchdog|Kube.*Unreachable|Alertmanager.*Failed.*|etcd.*"
+    receiver:
+      - name: 'null'
+      - name: 'discord-notifications'
+        discord_configs:
+          - webhook_url: 'https://discord.com/api/webhooks/1533799920098873404/hmMefr0a60Pa6ODt1BPkgSWqX3_GMSJRJas3v4u3E7o1AbviAO0__sZTCaVThwHZVcRi'
+
+dditionalPrometheusRulesMap:
   custom-crashloop-rule:
     groups:
       - name: custom-kubernetes-apps
