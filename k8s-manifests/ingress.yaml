@@ -14,7 +14,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: bank.aadirao.info
+    - host: bank.aadirao.online
       http:
         paths:
           - path: /
